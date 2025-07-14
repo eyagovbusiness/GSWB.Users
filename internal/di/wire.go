@@ -4,7 +4,10 @@
 package di
 
 import (
-	"github.com/eyagovbusiness/GSWB.Users/src/application/UseCases/user"
+	"fmt"
+	"os"
+
+	"github.com/eyagovbusiness/GSWB.Users/src/application/useCases/user"
 	"github.com/eyagovbusiness/GSWB.Users/src/infrastructure/persistence/models"
 	"github.com/eyagovbusiness/GSWB.Users/src/infrastructure/persistence/repositories"
 	"github.com/eyagovbusiness/GSWB.Users/src/presentation/http"
@@ -29,14 +32,30 @@ func InitializeServer() (*http.Server, error) {
 }
 
 func ProvideDatabase() (*gorm.DB, error) {
-	dsn := "host=localhost port=5432 user=postgres dbname=users password=secret sslmode=disable"
+	// Read from environment
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+
+	// Debug log to confirm what we read
+	fmt.Println("[ENV] DB_HOST =", host)
+	fmt.Println("[ENV] DB_PORT =", port)
+	fmt.Println("[ENV] DB_USER =", user)
+	fmt.Println("[ENV] DB_PASSWORD =", password)
+	fmt.Println("[ENV] DB_NAME =", dbname)
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
+		host, port, user, dbname, password)
+
+	fmt.Println("[GORM] Using DSN:", dsn)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize database, got error %w", err)
 	}
 
-	// Auto-migrate UserModel
 	if err := db.AutoMigrate(&models.UserModel{}); err != nil {
 		return nil, err
 	}

@@ -7,12 +7,15 @@
 package di
 
 import (
-	"github.com/eyagovbusiness/GSWB.Users/src/application/UseCases/user"
+	"fmt"
+	"github.com/eyagovbusiness/GSWB.Users/src/application/useCases/user"
+	"github.com/eyagovbusiness/GSWB.Users/src/infrastructure/persistence/models"
 	"github.com/eyagovbusiness/GSWB.Users/src/infrastructure/persistence/repositories"
 	"github.com/eyagovbusiness/GSWB.Users/src/presentation/http"
 	"github.com/eyagovbusiness/GSWB.Users/src/presentation/http/handler"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"os"
 )
 
 // Injectors from wire.go:
@@ -33,10 +36,28 @@ func InitializeServer() (*http.Server, error) {
 // wire.go:
 
 func ProvideDatabase() (*gorm.DB, error) {
-	dsn := "host=localhost port=5432 user=postgres dbname=users password=secret sslmode=disable"
+
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user2 := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	dbname := os.Getenv("DB_NAME")
+	fmt.Println("[ENV] DB_HOST =", host)
+	fmt.Println("[ENV] DB_PORT =", port)
+	fmt.Println("[ENV] DB_USER =", user2)
+	fmt.Println("[ENV] DB_PASSWORD =", password)
+	fmt.Println("[ENV] DB_NAME =", dbname)
+
+	dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
+		host, port, user2, dbname, password)
+	fmt.Println("[GORM] Using DSN:", dsn)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
+		return nil, fmt.Errorf("failed to initialize database, got error %w", err)
+	}
+
+	if err := db.AutoMigrate(&models.UserModel{}); err != nil {
 		return nil, err
 	}
 
